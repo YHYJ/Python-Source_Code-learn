@@ -4,38 +4,37 @@
 
 ## 0.0 注意事项
 
-1. Python2.5自定义了新的类型Py_ssize_t，一般以int视之
+> 1. Python2.5自定义了新的类型Py_ssize_t，一般以int视之
+> 2. 直至2.5版本，Python有一套相当复杂的内存管理机制和相当混乱的内存管理接口。因为创建对象必先分配内存，就必须通过内存管理接口，所以对内存管理接口进行一些概念上的简化
 
-2. 直至2.5版本，Python有一套相当复杂的内存管理机制和相当混乱的内存管理接口。因为创建对象必先分配内存，就必须通过内存管理接口，所以对内存管理接口进行一些概念上的简化
-
-   > 通常Python的源码会使用PyObject_GC_New、PyObject_GC_Malloc、PyMem_MALLOC、PyObject_MALLOC等API：
-   >
-   > * 凡以**New**结尾的，都以C++中的**new操作符**视之
-   > * 凡以**Malloc**结尾的，都以C中的**malloc操作符**视之
+> 通常Python的源码会使用PyObject_GC_New、PyObject_GC_Malloc、PyMem_MALLOC、PyObject_MALLOC等API：
+>
+> * 凡以**New**结尾的，都以C++中的**new操作符**视之
+> * 凡以**Malloc**结尾的，都以C中的**malloc操作符**视之
 
 ## 0.1 Python总体架构
 
 > 在最高层次上，Python的整体架构可以分为3个主要部分
-
-![0.1](../image/0.1.png)
-
-* 左边(File Groups)：Python提供的模块、库以及用户自定义的模块
-* 右边(Runtime Environment)：Python的运行时环境，包括**对象/类型系统、内存分配器、运行时状态信息**
-  * 对象/类型系统：包含Python内建对象(int、list、dict)及用户自定义的类型和对象
-  * 内存分配器：全权负责Python创建对象时对内存的申请，实际是Python运行时与C中malloc的一层接口
-  * 运行时状态：维护解释器在运行字节码时不同状态之间的切换
-* 中间(Python Core)：Python解释器
+>
+> ![0.1](../image/0.1.png)
+>
+> * 左边(File Groups)：Python提供的模块、库以及用户自定义的模块
+> * 右边(Runtime Environment)：Python的运行时环境，包括**对象/类型系统、内存分配器、运行时状态信息**
+> * 对象/类型系统：包含Python内建对象(int、list、dict)及用户自定义的类型和对象
+> * 内存分配器：全权负责Python创建对象时对内存的申请，实际是Python运行时与C中malloc的一层接口
+> * 运行时状态：维护解释器在运行字节码时不同状态之间的切换
+> * 中间(Python Core)：Python解释器
 
 ## 0.2 Python源代码的组织结构
 
-* **Include**：Python提供的头文件，用户使用C/C++编写自定义模块拓展Python时使用
-* **Lib**：Python编写的所有Python标准库
-* **Modules**：C编写的对速度有严格要求的模块(random、cStringIO...)
-* **Parser**：包含Python解释器中的Scanner和Parser部分，对Python源代码进行词法和语法分析的部分。还包含能根据Python语法自动生成分析器的工具
-* **Objects**：所有Python内建对象(int、list、dict...)，还包括运行时需要的所有内部使用对象的实现
-* **Python**：包含解释器中的编译器和执行引擎部分，***核心***
-* **PCbuild**：VS2003工程文件，编译用
-* **PCbuild8**：VS2005工程文件，编译用
+> * **Include**：Python提供的头文件，用户使用C/C++编写自定义模块拓展Python时使用
+> * **Lib**：Python编写的所有Python标准库
+> * **Modules**：C编写的对速度有严格要求的模块(random、cStringIO...)
+> * **Parser**：包含Python解释器中的Scanner和Parser部分，对Python源代码进行词法和语法分析的部分。还包含能根据Python语法自动生成分析器的工具
+> * **Objects**：所有Python内建对象(int、list、dict...)，还包括运行时需要的所有内部使用对象的实现
+> * **Python**：包含解释器中的编译器和执行引擎部分，***核心***
+> * **PCbuild**：VS2003工程文件，编译用
+> * **PCbuild8**：VS2005工程文件，编译用
 
 ### 0.2.1 Unix/Linux环境下编译安装Python
 
@@ -55,7 +54,7 @@
 >
 > > **重点**：
 > >
-> > 1. 了解对象在Python内部是如何表示的以及其在C的层面的模样
+> > 1. 了解对象在Python内部是如何表示的以及其在C层面的模样
 > > 2. 类型对象在C层面的实现，初步认识类型对象的作用及其与实例对象的关系
 
 ## 1.1 Python内的对象
@@ -95,13 +94,15 @@
 > [object.h]
 > # ifdef Py_TRACE_REFS
 > /* Define pointers to support a doubly-linked list of all live heap objects. */
-> 	# define _PyObject_HEAD_EXTRA		\
-> 		struct _object *_ob_next;	\
-> 		struct _object *_ob_prev;
-> 	# define _PyObject_EXTRA_INIT 0, 0,
+> # define _PyObject_HEAD_EXTRA		\
+> 	struct _object *_ob_next;	\
+> 	struct _object *_ob_prev;
+> 	
+> # define _PyObject_EXTRA_INIT 0, 0,
+>
 > # else
-> 	# define _PyObject_HEAD_EXTRA
-> 	# define _PyObject_EXTRA_INIT
+> # define _PyObject_HEAD_EXTRA
+> # define _PyObject_EXTRA_INIT
 > # endif
 >
 > /* PyObject_HEAD defines the initial segment of every PyObject. */
@@ -168,6 +169,82 @@
 >
 > ![1.1](../image/1.1.png)
 >
-> 
 
- 
+## 1.2 类型对象
+
+> 为创建对象分配内存时必须知道要申请的内存大小，不同对象所需空间不同。对象所需空间大小的信息隐式存在于PyObject中
+>
+> 占用内存大小是对象的一种元信息，与对象所属类型密切相关，因此存在于与对象对应的类型对象中
+>
+> **类型对象_typeobject**：
+>
+> ```c
+> [object.h]
+> typedef struct _typeobject {
+> 	PyObject_VAR_HEAD、
+> 	char *tp_name;	/* For printing, in format "<moudle>.<name>" */
+> 	int tp_basicsize, tp_itemsize;	/* For allocation */
+> 	
+> 	/* Methods to implement standard operations */
+> 	destructor tp_dealloc;
+> 	printfunc tp_print;
+> 	...
+> 	/* More standard operations (here for binary compatibility) */
+> 	hashfunc tp_hash;
+> 	ternaryfunc tp_call;
+> 	...
+> } PyTypeObject；
+> ```
+>
+> 类型对象_typeobject主要包含4类信息：
+>
+> 1. **类型名**：**tp_name**，主要是Python内部以及调试时候用
+> 2. 创建该类型对象时分配**内存空间大小**的信息，即**tp_basicsize**和**tp_itemsize**
+> 3. 与该类型对象相关联的**操作信息**（诸如**tp_print**这样的许多的**函数指针**）
+> 4. 类型的类型信息
+>
+> 一个PyTypeObject对象就是Python中面向对象中“类”概念的实现
+
+### 1.2.1 对象的创建
+
+> 使Python创建一个整数对象，一般来说有两种方法：
+>
+> 1. 通过Python C API
+>
+>    > Python的C API分为两类：
+>    >
+>    > * 范型的API (AOL——Abstract Object Layer抽象对象层)
+>    >
+>    >   这类API形如`PyObject_***`形式，可以应用于任何Python对象，例如输出对象`PyObject_Print`，可以`PyObject_Print(int object)`，也可以`PyObject_Print(string object)`。API内部机制确定最终调用哪个函数。创建整数可以：
+>    >
+>    >   ```c
+>    >   PyObject* intObj = PyObject_New(PyObject, &PyInt_Type)
+>    >   ```
+>    >
+>    > * 类型相关的API (COL——Concrete Object Layer具体对象层)
+>    >
+>    >   通常只能作用于某一种类型的对象，Python为每种内建对象提供了这样一组API。
+>    >
+>    >   对于整数对象，可以：
+>    >
+>    >   ```c
+>    >   PyObject *intObj = PyInt_FromLong(10)		// 值为10的整数对象
+>    >   ```
+>    >
+>    > 不论采用哪种C API，Python内部最终都是直接分配内存
+>    >
+>    > Python对于内建对象无所不知，但对于自定义类型如`class A(oject)`，定义一个类型A，要创建A的实例对象（实例对象可视为面向对象中的“对象”概念），Python不可能事先提供PyA_New这样的API。对此Python通过A对应的类型对象创建实例对象：
+>    >
+>    > ![1-2](../image/1.2.png)
+>    >
+>    > 在Python初始化完成运行环境后，符号“int”就代表一个<type 'int'>的对象即内部的`PyInt_Type`
+>    >
+>    > 执行“int(10)”时，就是通过`PyInt_Type`创建了一个整数对象
+>    >
+>    > 图1-2显示，在Python2.2后的`new style class`中，`int`是一个继承自`object`的类型；类似于`int`对应着Python内部的`PyInt_Type`，`object`在Python内部对应`PyBaseObject_Type`
+>
+> 2. 通过类型对象PyInt_Type
+
+### 1.2.2 对象的行为
+
+> PyTypeObject中定义了大量指向某个函数或NULL的函数指针，这些函数指针可视为类型对象中定义的操作，这些操作又决定着一个对象在运行时表现出的行为
